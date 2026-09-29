@@ -61,3 +61,31 @@ flights, 306 distinct codes, no mixing.
 This matters because the train/test split is temporal. Left uncorrected, the
 codes in the test set would match nothing learned during training, and every
 airport-based feature would break silently, without raising any error.
+
+---
+
+## Fourth Step: Map airport codes to IATA
+
+```bash
+python scripts/map_airports.py
+```
+
+This produces `data/flights_clean.parquet`, where every airport code is IATA.
+Every step after this one reads this file.
+
+The two lookup tables are joined on their `Description` column. Two issues
+came up along the way:
+
+- **Duplicate matches.** 4 of the 306 October codes match two IATA candidates
+  (e.g. `10423` → `AUS` or `BSM`). The candidate that appears in the other
+  months of the dataset is kept.
+- **Renamed airport.** The lookup tables describe airports as they are today,
+  not in 2015. One airport (`14027`, West Palm Beach) was renamed since, and
+  now maps to a code absent from the 2015 data. It is mapped to `PBI` by hand.
+
+Two tests guard the result: no numeric code remains, and the row count is
+unchanged (a join producing duplicate rows would otherwise go unnoticed).
+
+```bash
+pytest
+```
